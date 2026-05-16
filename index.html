@@ -875,21 +875,26 @@ function renderCard() {
 function renderBlankMode(card) {
   let html = escHtml(card.full);
   const sortedKeys = [...card.keys].sort((a, b) => b.length - a.length);
-  const placeholders = [];
   
+  const keyPlaceholders = [];
   sortedKeys.forEach((k, i) => {
     const safeK = escHtml(k);
-    const placeholder = `__BLANK_${i}__`;
-    placeholders.push({ placeholder, safeK, index: i });
+    const placeholder = `__BLANK_KEY_${i}__`;
+    keyPlaceholders.push({ placeholder, safeK });
     html = html.split(safeK).join(placeholder);
   });
-  
-  placeholders.forEach(({ placeholder, safeK, index }) => {
-    const rep = `<span class="blank" id="blank_${index}" onclick="revealBlank(${index})">${safeK}</span>`;
-    html = html.split(placeholder).join(rep);
+
+  let globalIdx = 0;
+  keyPlaceholders.forEach(({ placeholder, safeK }) => {
+    while (html.includes(placeholder)) {
+      const id = globalIdx++;
+      const rep = `<span class="blank" id="blank_${id}" onclick="revealBlank(${id})">${safeK}</span>`;
+      html = html.replace(placeholder, rep);
+    }
   });
   
   dom.questionText.innerHTML = html;
+  dom.questionText.dataset.blankCount = globalIdx;
 }
 
 function revealBlank(i) {
@@ -898,8 +903,8 @@ function revealBlank(i) {
 }
 
 function revealAllBlanks() {
-  const card = CARDS[order[currentIndex]];
-  card.keys.forEach((_, i) => revealBlank(i));
+  const count = parseInt(dom.questionText.dataset.blankCount || '0');
+  for (let i = 0; i < count; i++) revealBlank(i);
   dom.answerArea.classList.add('visible');
 }
 
@@ -907,8 +912,8 @@ function revealAllBlanks() {
 //  CONTROLS
 // ─────────────────────────────────────────────
 function showAnswer() {
-  const card = CARDS[order[currentIndex]];
-  card.keys.forEach((_, i) => revealBlank(i));
+  const count = parseInt(dom.questionText.dataset.blankCount || '0');
+  for (let i = 0; i < count; i++) revealBlank(i);
   dom.answerArea.classList.add('visible');
   dom.btnRowReveal.style.display = 'none';
   dom.btnRowJudge.style.display  = 'flex';
